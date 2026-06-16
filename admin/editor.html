@@ -187,7 +187,40 @@
       background: rgba(255, 255, 255, 0.01);
       border-radius: 8px;
       border: 1px solid var(--card-border);
-      overflow: hidden;
+      position: relative;
+    }
+    
+    /* Custom Quill Tooltip Styling (for link/image popups) */
+    .ql-tooltip {
+      background-color: var(--bg-secondary) !important;
+      border: 1px solid var(--card-border) !important;
+      color: var(--text-primary) !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+      border-radius: 8px !important;
+      z-index: 2000 !important;
+      padding: 10px 12px !important;
+    }
+    .ql-tooltip input[type=text] {
+      background: rgba(255, 255, 255, 0.05) !important;
+      border: 1px solid var(--card-border) !important;
+      color: var(--text-primary) !important;
+      border-radius: 4px !important;
+      padding: 6px 10px !important;
+      margin-right: 8px !important;
+      font-family: var(--font-sans) !important;
+    }
+    .ql-tooltip a.ql-action::after {
+      color: var(--accent-purple) !important;
+      font-weight: 600 !important;
+      text-decoration: none !important;
+      margin-right: 8px !important;
+    }
+    .ql-tooltip a.ql-remove::before {
+      color: #f87171 !important;
+      text-decoration: none !important;
+    }
+    .ql-tooltip.ql-hidden {
+      display: none !important;
     }
     #quill-editor {
       height: 450px;
