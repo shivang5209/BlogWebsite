@@ -32,37 +32,107 @@ const validatorVote = {
     `
   },
   {
-    id: "building-antigravity-engine",
-    title: "Building Antigravity: An Ultra-Fast Static Engine",
+    id: "repurpose-old-laptop-server",
+    title: "Turning an Old Laptop Into a Powerful Local Server: A Hands-On Guide",
     category: "Projects",
     date: "June 10, 2026",
     readTime: "5 min read",
-    image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=600&auto=format&fit=crop",
-    excerpt: "A behind-the-scenes look at how I developed an open-source static site compiler that builds websites in milliseconds.",
+    image: "/fedora-server-thumbnail.png",
+    excerpt: "We all have an old laptop lying around collecting dust. Instead of letting that hardware go to waste, why not turn it into something incredibly useful? A dedicated home server can host your backend applications, run local automated workflows, or manage a self-hosted database completely for free—saving you from expensive cloud bills.",
     content: `
-      <p>Over the last few months, I've been building <strong>Antigravity</strong>, an experimental static site compiler optimized for rapid rendering and minimal client-side overhead. Here is why I built it and how it works.</p>
-      
-      <h2>Why Another Static Site Generator?</h2>
-      <p>Most modern SSGs pull in massive dependencies and produce large client JS payloads. I wanted a zero-dependency compiler written in a language that compiles to binary, with native assets bundling and instant hot-reloading.</p>
-      
-      <h3>Core Tech Stack</h3>
+      <p>We all have an old laptop lying around collecting dust. Instead of letting that hardware go to waste, why not turn it into something incredibly useful? A dedicated home server can host your backend applications, run local automated workflows, or manage a self-hosted database completely for free—saving you from expensive cloud bills.</p>
+
+      <p>In this article, I will take you through my exact journey of repurposing an old laptop into a Linux-powered server running <strong>Fedora</strong>, including the real-world terminal hurdles I faced and how you can do it too.</p>
+
+      <hr>
+
+      <h2>Why Use an Old Laptop as a Server?</h2>
+      <p>Using an old laptop gives you two massive advantages over buying a dedicated mini-PC or a Raspberry Pi:</p>
+      <ol>
+        <li><strong>Built-in UPS:</strong> If the power goes out in your house, the laptop battery acts as an instant backup, keeping your server online.</li>
+        <li><strong>Built-in Console:</strong> You have a built-in keyboard and screen ready to troubleshoot if your network connection drops.</li>
+      </ol>
+
+      <hr>
+
+      <h2>Step 1: Setting Up the Operating System</h2>
+      <p>To get the absolute maximum performance out of old hardware, you need a lightweight, stable Linux distribution. For this setup, <strong>Fedora</strong> is an exceptional choice—it is incredibly modern, secure, and developer-friendly.</p>
+      <p>Once Fedora is installed, you can close the laptop lid (make sure to configure your system settings so closing the lid doesn't trigger sleep mode) and slide it into a corner. Your server is officially alive.</p>
+
+      <hr>
+
+      <h2>Step 2: Transferring Project Files via CLI</h2>
+      <p>When setting up a server, you will frequently need to move files over from physical storage like a USB pen drive. Doing this entirely through the terminal can occasionally be tricky, but it gives you total control over the filesystem.</p>
+      <p>Here is the exact workflow to mount a USB drive, move your project files, and safely disconnect the drive.</p>
+
+      <h3>1. Identify the USB Drive</h3>
+      <p>Plug in your USB drive and locate its device identifier using:</p>
+      <pre><code class="language-bash">lsblk</code></pre>
+      <p>Look for your drive size (e.g., <code>sdc</code>, <code>sdb</code>). The specific partition you want to mount will usually look like <code>/dev/sdc1</code>.</p>
+
+      <h3>2. Prepare the Mount Point</h3>
+      <p>Linux requires a folder (a "bridge") to read the USB. Create a directory inside your <code>/mnt</code> folder:</p>
+      <pre><code class="language-bash">sudo mkdir -p /mnt/usb</code></pre>
+
+      <h3>3. Mount the Drive</h3>
+      <p>To connect the USB filesystem to your new bridge folder, execute:</p>
+      <pre><code class="language-bash">sudo mount /dev/sdc1 /mnt/usb</code></pre>
+
+      <blockquote>
+        <strong>Real-World Troubleshooting Note:</strong> If the terminal gives you a warning hint regarding <code>systemd</code> or out-of-sync configuration files, do not panic. This happens when a drive isn't cleanly unmounted previously. You can force Fedora's background services to refresh by running:
+        <pre><code class="language-bash">sudo systemctl daemon-reload</code></pre>
+        After running the reload, execute the <code>mount</code> command again, and it will go through smoothly!
+      </blockquote>
+
+      <h3>4. Copy Your Code Folders</h3>
+      <p>To view the contents of your USB drive, use <code>ls /mnt/usb</code>. Once you see your project folder (for example, a Node.js backend named <code>portfolio-server</code>), copy it permanently over to your server's home directory recursively:</p>
+      <pre><code class="language-bash">cp -r /mnt/usb/portfolio-server ~/</code></pre>
+      <p><em>(The <code>-r</code> flag ensures that every single file and subfolder inside your project copies over perfectly).</em></p>
+
+      <h3>5. Safely Eject the Drive</h3>
+      <p>Never just pull out a USB drive from a server! To avoid data corruption, step out of the folder and sever the connection cleanly using the <strong><code>umount</code></strong> command (notice there is no "n" in the middle of the command):</p>
+      <pre><code class="language-bash">cd ~
+      sudo umount /mnt/usb</code></pre>
+      <p>Once the command executes cleanly without any errors, you can safely pull the pen drive out.</p>
+
+      <hr>
+
+      <h2>Step 3: Designing the Architecture (Decoupling)</h2>
+      <p>Now that your backend code is on the laptop, how should your application be structured? The most professional and cost-effective approach is <strong>decoupling your frontend and backend</strong>.</p>
+      <pre><code>[Static Frontend] --------&gt; Public Secure Tunnel --------&gt; [Fedora Laptop Server]
+(Hosted on Netlify)            (e.g., Pinggy/zrok)            (Running Node/Express)</code></pre>
       <ul>
-        <li><strong>Compiler Core</strong>: Go (for concurrent markdown parsing)</li>
-        <li><strong>Asset Pipeline</strong>: Custom Rust-based minifier</li>
-        <li><strong>Client Router</strong>: Pure vanilla script under 2KB</li>
+        <li><strong>The Frontend:</strong> Host your static portfolio UI completely for free on platforms like <strong>Netlify</strong> or <strong>Vercel</strong>. They offer global CDN speeds and free auto-renewing SSL (HTTPS) certificates out of the box.</li>
+        <li><strong>The Backend:</strong> Run your persistent Node.js or Python backend server 24/7 on your old laptop.</li>
+        <li><strong>The Bridge:</strong> Since your laptop sits safely behind your home router, you can expose your local port securely to the internet using tunneling utilities like <strong>Pinggy</strong>, <strong>Zrok</strong>, or <strong>LocalXpose</strong>. These tools give you a secure <code>https://</code> URL that you can simply plug into your Netlify environment variables as your API base path.</li>
       </ul>
-      
-      <pre><code class="language-rust">
-// Rust-based asset pipeline entry point
-fn minify_javascript(source: &str) -> String {
-    let mut minified = String::new();
-    // Tokenization and structural compression here
-    minified
-}
-      </code></pre>
-      
-      <h2>Performance Results</h2>
-      <p>On a test directory of 1,000 markdown pages, Antigravity built the entire site in exactly <strong>142ms</strong>. Hot reload is virtually instantaneous because it uses a WebSocket-free DOM diffing injection mechanism.</p>
+
+      <hr>
+
+      <h2>Step 4: The Ultimate Database Setup (Local Supabase via Docker)</h2>
+      <p>If your projects require a database, you don't need to pay for cloud database clusters. You can self-host <strong>Supabase</strong> directly on your Fedora server using Docker. This gives you an enterprise-grade PostgreSQL database, user authentication, and a gorgeous web dashboard (Supabase Studio) accessible across your entire home network.</p>
+
+      <h3>How to Initialize It:</h3>
+      <p>1. <strong>Install Docker on Fedora:</strong></p>
+      <pre><code class="language-bash">sudo dnf install docker-ce docker-compose-plugin
+sudo systemctl enable --now docker</code></pre>
+
+      <p>2. <strong>Launch the Official Supabase Stack:</strong></p>
+      <pre><code class="language-bash">curl -fsSL https://supabase.link/setup.sh | sh
+cd supabase-project
+sh run.sh start</code></pre>
+
+      <p>3. <strong>Open the Local Firewall:</strong> Fedora blocks inbound connections by default. Open the gateway port so your other devices can view the dashboard:</p>
+      <pre><code class="language-bash">sudo firewall-cmd --zone=public --add-port=8000/tcp --permanent
+sudo firewall-cmd --reload</code></pre>
+
+      <p>Now, by finding your laptop’s local IP address (<code>ip route get 1.1.1.1</code>), you can type <code>http://&lt;your-laptop-ip&gt;:8000</code> into any phone or secondary computer on your Wi-Fi and manage your production data beautifully.</p>
+
+      <hr>
+
+      <h2>Final Thoughts</h2>
+      <p>Repurposing an old laptop isn't just a great weekend project—it changes your entire development workflow. You gain a sandbox environment where you can deploy software, experiment with Docker containers, and test live apps without ever opening your wallet for cloud hosting platforms.</p>
+      <p>Clean off that old keyboard, flash a Linux ISO, and start building your own local server infrastructure today!</p>
     `
   },
   {
