@@ -295,6 +295,33 @@
       margin-top: 1.5rem;
     }
     
+    .btn-action-primary {
+      background: var(--accent-gradient);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
+      transition: var(--transition);
+      text-decoration: none;
+    }
+    .btn-action-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45);
+    }
+    .btn-action-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    
     .featured-checkbox {
       display: flex;
       align-items: center;
