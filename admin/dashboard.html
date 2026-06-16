@@ -52,6 +52,16 @@
     .admin-user {
       font-size: 0.9rem;
       color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .admin-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background-size: cover;
+      border: 1.5px solid var(--accent-purple);
     }
     .btn-logout {
       background: transparent;
@@ -158,24 +168,6 @@
     .btn-action-primary:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
-    }
-    .btn-action-secondary {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--card-border);
-      color: var(--text-primary);
-      padding: 0.65rem 1.25rem;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: var(--transition);
-    }
-    .btn-action-secondary:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: var(--text-secondary);
     }
 
     /* Table styles */
@@ -324,7 +316,10 @@
         shivangcodes.in <span style="font-size: 0.75rem; background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 500;">CMS</span>
       </a>
       <div class="admin-nav">
-        <span class="admin-user" id="admin-user-display"><i class="fa-solid fa-user-shield"></i> Admin</span>
+        <span class="admin-user" id="admin-user-display">
+          <div class="admin-avatar" id="admin-avatar"></div>
+          <span id="admin-name">Loading...</span>
+        </span>
         <button class="btn-logout" id="logout-btn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</button>
       </div>
     </header>
@@ -363,11 +358,8 @@
 
     <!-- Actions bar -->
     <div class="actions-bar">
-      <h2>All Articles</h2>
+      <h2>My Articles</h2>
       <div class="actions-group">
-        <button class="btn-action-secondary" id="sync-cache-btn" title="Force rebuild public posts-cache.json file">
-          <i class="fa-solid fa-rotate"></i> Sync Static Cache
-        </button>
         <a href="editor.html" class="btn-action-primary">
           <i class="fa-solid fa-plus"></i> New Article
         </a>
@@ -378,7 +370,7 @@
     <div class="table-wrapper">
       <div id="loading" class="loading-spinner">
         <i class="fa-solid fa-spinner fa-spin fa-2xl" style="color: var(--accent-purple);"></i>
-        <p style="margin-top: 1rem;">Retrieving articles from Fedora backend...</p>
+        <p style="margin-top: 1rem;">Retrieving articles from Cloud Firestore...</p>
       </div>
       
       <table id="posts-table" style="display: none;">
@@ -403,75 +395,64 @@
     </div>
   </div>
 
-  <script src="../api-config.js"></script>
+  <!-- Firebase Core SDK and Auth/Firestore Libraries -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  
+  <!-- Firebase Project Configuration -->
+  <script src="../firebase-config.js"></script>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Validate Auth State
-      const token = localStorage.getItem('jwt_token');
-      const email = localStorage.getItem('admin_email');
-      
-      if (!token) {
-        window.location.href = 'login.html';
-        return;
-      }
-
-      if (email) {
-        document.getElementById('admin-user-display').innerHTML = `<i class="fa-solid fa-user-shield"></i> ${email}`;
-      }
+      window.auth.onAuthStateChanged(user => {
+        if (!user) {
+          window.location.href = 'login.html';
+        } else {
+          // Display user details
+          const avatarUrl = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=8b5cf6&color=fff`;
+          document.getElementById('admin-avatar').style.backgroundImage = `url('${avatarUrl}')`;
+          document.getElementById('admin-name').innerText = user.displayName || user.email;
+          
+          // Load User Specific Posts
+          loadDashboardPosts(user.uid);
+        }
+      });
 
       // Logout handler
       document.getElementById('logout-btn').addEventListener('click', () => {
-        localStorage.removeItem('jwt_token');
-        localStorage.removeItem('admin_email');
-        window.location.href = 'login.html';
+        window.auth.signOut().then(() => {
+          window.location.href = 'login.html';
+        });
       });
 
       const table = document.getElementById('posts-table');
       const tbody = document.getElementById('posts-tbody');
       const loading = document.getElementById('loading');
       const emptyState = document.getElementById('empty-state');
-      const syncBtn = document.getElementById('sync-cache-btn');
 
-      // Sync static cache
-      syncBtn.addEventListener('click', async () => {
-        syncBtn.disabled = true;
-        syncBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Syncing...';
+      // Load all posts belonging strictly to this user
+      async function loadDashboardPosts(userId) {
         try {
-          const res = await fetch(`${window.API_BASE}/api/admin/sync-cache`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Failed to sync cache.');
-          alert('Static snapshot cache (posts-cache.json) updated! Push the changes to GitHub to update Netlify.');
-        } catch (err) {
-          alert('Error syncing cache: ' + err.message);
-        } finally {
-          syncBtn.disabled = false;
-          syncBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Sync Static Cache';
-        }
-      });
+          const snapshot = await window.db.collection('posts')
+            .where('authorId', '==', userId)
+            .get();
 
-      // Load all posts
-      async function loadDashboardPosts() {
-        try {
-          const res = await fetch(`${window.API_BASE}/api/admin/posts`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+          const posts = [];
+          snapshot.forEach(doc => {
+            posts.push({
+              id: doc.id,
+              ...doc.data()
+            });
           });
-          
-          if (res.status === 401 || res.status === 403) {
-            // Auth token invalid or expired
-            localStorage.removeItem('jwt_token');
-            window.location.href = 'login.html';
-            return;
-          }
 
-          const posts = await res.json();
-          if (!res.ok) throw new Error(posts.error || 'Failed to retrieve articles.');
+          // Sort by created_at desc
+          posts.sort((a, b) => {
+            const timeA = a.created_at ? a.created_at.seconds || 0 : 0;
+            const timeB = b.created_at ? b.created_at.seconds || 0 : 0;
+            return timeB - timeA;
+          });
 
           updateStats(posts);
           renderTable(posts);
@@ -481,8 +462,8 @@
           loading.innerHTML = `
             <div style="color: #f87171; padding: 2rem;">
               <i class="fa-solid fa-circle-exclamation fa-2xl" style="margin-bottom: 1rem;"></i>
-              <p>Failed to connect to the Fedora API backend at <strong>${window.API_BASE}</strong></p>
-              <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">Ensure your Fedora laptop is ON, the Express API is running, and the Cloudflare Tunnel is open.</p>
+              <p>Failed to retrieve articles from Firebase Firestore.</p>
+              <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">${err.message}</p>
             </div>
           `;
         }
@@ -517,11 +498,14 @@
           const tr = document.createElement('tr');
           
           // Format Date
-          const createdDate = new Date(post.created_at).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          });
+          let createdDate = 'Unknown';
+          if (post.created_at && post.created_at.seconds) {
+            createdDate = new Date(post.created_at.seconds * 1000).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            });
+          }
 
           // Status Badge Class
           let statusClass = 'status-draft';
@@ -584,19 +568,12 @@
               btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
               
               try {
-                const res = await fetch(`${window.API_BASE}/api/admin/posts/${id}`, {
-                  method: 'DELETE',
-                  headers: {
-                    'Authorization': `Bearer ${token}`
-                  }
-                });
-
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to delete post.');
-
+                // Delete from Firestore
+                await window.db.collection('posts').doc(id).delete();
+                
                 // Refresh dashboard
-                loadDashboardPosts();
-                alert('Post deleted successfully. Push changes to Git to sync Netlify.');
+                loadDashboardPosts(window.auth.currentUser.uid);
+                alert('Post deleted successfully.');
 
               } catch (err) {
                 alert('Error deleting article: ' + err.message);
@@ -607,9 +584,6 @@
           });
         });
       }
-
-      // Initial Fetch
-      loadDashboardPosts();
     });
   </script>
 </body>

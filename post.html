@@ -26,6 +26,11 @@
           <span class="post-date-time" id="post-meta-details">Date • Time</span>
         </div>
         <h1 id="post-title">Article Title</h1>
+        <!-- Author Badge -->
+        <div id="post-author-badge" style="display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem;">
+          <img id="post-author-avatar" src="" alt="" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--accent-purple); display: none;">
+          <span id="post-author-name" style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 500;"></span>
+        </div>
       </div>
 
       <!-- Hero Image -->
@@ -68,7 +73,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
   
-  <script src="api-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
   <script src="posts.js"></script>
   <script src="app.js"></script>
   
@@ -107,6 +114,14 @@
       document.getElementById('post-category').innerText = post.category;
       document.getElementById('post-meta-details').innerText = `${post.date} • ${post.readTime}`;
       document.getElementById('post-hero-image').style.backgroundImage = `url('${post.image}')`;
+      
+      // Update Author Badge
+      if (post.authorName) {
+        document.getElementById('post-author-name').innerText = `By ${post.authorName}`;
+        const avatarImg = document.getElementById('post-author-avatar');
+        avatarImg.src = post.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName)}&background=8b5cf6&color=fff`;
+        avatarImg.style.display = 'block';
+      }
       
       // Render body text based on whether it is HTML or Markdown
       let contentHtml = post.content;

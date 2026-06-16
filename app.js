@@ -67,20 +67,32 @@ function renderFooter() {
 
 // Build Article HTML string
 function buildArticleCard(post) {
+  const authorName = post.authorName || 'Shivang Codes';
+  const authorPhoto = post.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=8b5cf6&color=fff`;
+
   return `
     <article class="article-card">
       <div class="article-image" style="background-image: url('${post.image}')">
         <span class="article-category">${post.category}</span>
       </div>
-      <div class="article-content">
-        <div class="article-meta">
-          <span>${post.date}</span>
-          <span>&bull;</span>
-          <span>${post.readTime}</span>
+      <div class="article-content" style="display: flex; flex-direction: column; justify-content: space-between; height: calc(100% - 200px);">
+        <div>
+          <div class="article-meta">
+            <span>${post.date}</span>
+            <span>&bull;</span>
+            <span>${post.readTime}</span>
+          </div>
+          <h3 class="article-title"><a href="post.html?id=${post.id}">${post.title}</a></h3>
+          <p class="article-excerpt">${post.excerpt}</p>
         </div>
-        <h3 class="article-title"><a href="post.html?id=${post.id}">${post.title}</a></h3>
-        <p class="article-excerpt">${post.excerpt}</p>
-        <a href="post.html?id=${post.id}" class="article-readmore">Read Article &rarr;</a>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <img src="${authorPhoto}" alt="${authorName}" style="width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--accent-purple);">
+            <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">By ${authorName}</span>
+          </div>
+          <a href="post.html?id=${post.id}" class="article-readmore" style="margin-top: 0;">Read &rarr;</a>
+        </div>
       </div>
     </article>
   `;
@@ -152,73 +164,131 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 50);
 });
 
-// Data Fetching: Load all published blog posts with live API and offline cache fallbacks
+// Data Fetching: Load all published blog posts directly from Firebase Firestore
 async function getBlogPosts() {
-  // 1. Try fetching from live Fedora API backend first
-  if (window.API_BASE) {
-    try {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 3500); // 3.5s timeout for quick fallback
-      
-      const res = await fetch(`${window.API_BASE}/api/posts`, { signal: controller.signal });
-      clearTimeout(id);
-      
-      if (res.ok) {
-        const posts = await res.json();
-        console.log('[Data Layer] Successfully loaded posts from live API.');
-        return posts;
-      }
-    } catch (err) {
-      console.warn('[Data Layer] Live API is unreachable. Falling back to cache. Error:', err.message);
-    }
-  }
-
-  // 2. Try loading from Netlify's static posts-cache.json next
   try {
-    const res = await fetch('posts-cache.json');
-    if (res.ok) {
-      const posts = await res.json();
-      console.log('[Data Layer] Successfully loaded posts from static posts-cache.json.');
-      return posts;
+    if (!window.db) {
+      throw new Error("Firebase database SDK is not initialized.");
     }
+    
+    // Query published posts
+    const snapshot = await window.db.collection('posts')
+      .where('status', '==', 'published')
+      .get();
+
+    const posts = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      
+      // Format date to local reader-friendly style (e.g. "June 16, 2026")
+      let formattedDate = 'Recent';
+      const dateTimestamp = data.published_at || data.created_at;
+      if (dateTimestamp) {
+        const date = dateTimestamp.toDate ? dateTimestamp.toDate() : new Date(dateTimestamp);
+        formattedDate = date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+
+      posts.push({
+        id: data.slug, // maps slug to 'id' for public website backward compatibility
+        docId: doc.id,
+        title: data.title,
+        category: data.category,
+        date: formattedDate,
+        readTime: data.read_time,
+        image: data.cover_image,
+        excerpt: data.excerpt,
+        content: data.content,
+        content_type: data.content_type,
+        tags: data.tags || [],
+        authorName: data.authorName || 'Anonymous',
+        authorPhoto: data.authorPhoto || '',
+        published_at: data.published_at ? data.published_at.toDate() : (data.created_at ? data.created_at.toDate() : null)
+      });
+    });
+
+    // Sort posts by published date descending
+    posts.sort((a, b) => {
+      const timeA = a.published_at ? a.published_at.getTime() : 0;
+      const timeB = b.published_at ? b.published_at.getTime() : 0;
+      return timeB - timeA;
+    });
+
+    console.log(`[Firebase Data Layer] Successfully loaded ${posts.length} articles.`);
+    return posts;
   } catch (err) {
-    console.warn('[Data Layer] posts-cache.json is not available. Falling back to local posts.js. Error:', err.message);
+    console.error('[Firebase Data Layer] Failed to fetch articles:', err);
+    // Fall back to local posts.js array if Firestore query fails (e.g. initial load before config)
+    if (typeof BLOG_POSTS !== 'undefined') {
+      console.warn('[Firebase Data Layer] Falling back to static posts.js failsafe array.');
+      return BLOG_POSTS;
+    }
+    return [];
   }
-
-  // 3. Fall back to hardcoded posts in posts.js (if available)
-  if (typeof BLOG_POSTS !== 'undefined') {
-    console.log('[Data Layer] Successfully loaded posts from local posts.js array.');
-    return BLOG_POSTS;
-  }
-
-  return [];
 }
 
-// Data Fetching: Load a single published blog post by slug with live API and offline cache fallbacks
+// Data Fetching: Load a single published blog post by slug from Firebase Firestore
 async function getSinglePost(slug) {
-  // 1. Try fetching from live Fedora API backend first
-  if (window.API_BASE) {
-    try {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
-      
-      const res = await fetch(`${window.API_BASE}/api/posts/${slug}`, { signal: controller.signal });
-      clearTimeout(id);
-      
-      if (res.ok) {
-        const post = await res.json();
-        console.log(`[Data Layer] Successfully loaded post "${slug}" from live API.`);
-        return post;
-      }
-    } catch (err) {
-      console.warn(`[Data Layer] Live API is unreachable for single post "${slug}". Falling back to cache. Error:`, err.message);
+  try {
+    if (!window.db) {
+      throw new Error("Firebase database SDK is not initialized.");
     }
-  }
 
-  // 2. Scan locally loaded cache/posts array
-  console.log(`[Data Layer] Scanning cache/fallback array for post "${slug}".`);
-  const allPosts = await getBlogPosts();
-  return allPosts.find(p => p.id === slug || p.slug === slug);
+    const snapshot = await window.db.collection('posts')
+      .where('slug', '==', slug)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      console.warn(`[Firebase Data Layer] Post "${slug}" not found in Firestore.`);
+      // Scan failsafe static array
+      if (typeof BLOG_POSTS !== 'undefined') {
+        return BLOG_POSTS.find(p => p.id === slug || p.slug === slug);
+      }
+      return null;
+    }
+    
+    const doc = snapshot.docs[0];
+    const data = doc.data();
+
+    let formattedDate = 'Recent';
+    const dateTimestamp = data.published_at || data.created_at;
+    if (dateTimestamp) {
+      const date = dateTimestamp.toDate ? dateTimestamp.toDate() : new Date(dateTimestamp);
+      formattedDate = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+
+    return {
+      id: data.slug,
+      docId: doc.id,
+      title: data.title,
+      category: data.category,
+      date: formattedDate,
+      readTime: data.read_time,
+      image: data.cover_image,
+      excerpt: data.excerpt,
+      content: data.content,
+      content_type: data.content_type,
+      tags: data.tags || [],
+      authorName: data.authorName || 'Anonymous',
+      authorPhoto: data.authorPhoto || '',
+      published_at: data.published_at ? data.published_at.toDate() : (data.created_at ? data.created_at.toDate() : null)
+    };
+  } catch (err) {
+    console.error(`[Firebase Data Layer] Failed to fetch post "${slug}":`, err);
+    // Scan local failsafe array
+    if (typeof BLOG_POSTS !== 'undefined') {
+      return BLOG_POSTS.find(p => p.id === slug || p.slug === slug);
+    }
+    return null;
+  }
 }
 
 // Expose functions globally
