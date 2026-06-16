@@ -30,13 +30,3 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-[[headers]]
-  for = "/api-config.js"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-
-[[headers]]
-  for = "/admin/*"
-  [headers.values]
-    Cache-Control = "private, no-cache, no-store, must-revalidate"
-

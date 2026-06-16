@@ -164,142 +164,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 50);
 });
 
-// Data Fetching: Load all published blog posts directly from Firebase Firestore
+// Data Fetching: Load all published blog posts directly from local static array
 async function getBlogPosts() {
-  try {
-    if (!window.db) {
-      throw new Error("Firebase database SDK is not initialized.");
-    }
-    
-    // Query published posts
-    const snapshot = await window.db.collection('posts')
-      .where('status', '==', 'published')
-      .get();
-
-    const posts = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      
-      // Format date to local reader-friendly style (e.g. "June 16, 2026")
-      let formattedDate = 'Recent';
-      const dateTimestamp = data.published_at || data.created_at;
-      if (dateTimestamp) {
-        const date = dateTimestamp.toDate ? dateTimestamp.toDate() : new Date(dateTimestamp);
-        formattedDate = date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
-      }
-
-      posts.push({
-        id: data.slug, // maps slug to 'id' for public website backward compatibility
-        docId: doc.id,
-        title: data.title,
-        category: data.category,
-        date: formattedDate,
-        readTime: data.read_time,
-        image: data.cover_image,
-        excerpt: data.excerpt,
-        content: data.content,
-        content_type: data.content_type,
-        tags: data.tags || [],
-        authorName: data.authorName || 'Anonymous',
-        authorPhoto: data.authorPhoto || '',
-        published_at: data.published_at ? data.published_at.toDate() : (data.created_at ? data.created_at.toDate() : null)
-      });
-    });
-
-    // Sort posts by published date descending
-    posts.sort((a, b) => {
-      const timeA = a.published_at ? a.published_at.getTime() : 0;
-      const timeB = b.published_at ? b.published_at.getTime() : 0;
-      return timeB - timeA;
-    });
-
-    console.log(`[Firebase Data Layer] Successfully loaded ${posts.length} articles.`);
-    return posts;
-  } catch (err) {
-    console.error('[Firebase Data Layer] Failed to fetch articles:', err);
-    // Fall back to local posts.js array if Firestore query fails (e.g. initial load before config)
-    if (typeof BLOG_POSTS !== 'undefined') {
-      console.warn('[Firebase Data Layer] Falling back to static posts.js failsafe array.');
-      return BLOG_POSTS;
-    }
-    return [];
+  if (typeof BLOG_POSTS !== 'undefined') {
+    // Sort posts by date or fallback structure
+    return BLOG_POSTS;
   }
+  return [];
 }
 
-// Data Fetching: Load a single published blog post by slug from Firebase Firestore
+// Data Fetching: Load a single published blog post by slug from local static array
 async function getSinglePost(slug) {
-  try {
-    if (!window.db) {
-      throw new Error("Firebase database SDK is not initialized.");
-    }
-
-    // Try finding in published posts first
-    let snapshot = await window.db.collection('posts')
-      .where('slug', '==', slug)
-      .where('status', '==', 'published')
-      .limit(1)
-      .get();
-
-    // If not found and user is logged in, try checking current user's drafts
-    if (snapshot.empty && window.auth && window.auth.currentUser) {
-      snapshot = await window.db.collection('posts')
-        .where('slug', '==', slug)
-        .where('authorId', '==', window.auth.currentUser.uid)
-        .limit(1)
-        .get();
-    }
-
-    if (snapshot.empty) {
-      console.warn(`[Firebase Data Layer] Post "${slug}" not found in Firestore.`);
-      // Scan failsafe static array
-      if (typeof BLOG_POSTS !== 'undefined') {
-        return BLOG_POSTS.find(p => p.id === slug || p.slug === slug);
-      }
-      return null;
-    }
-    
-    const doc = snapshot.docs[0];
-    const data = doc.data();
-
-    let formattedDate = 'Recent';
-    const dateTimestamp = data.published_at || data.created_at;
-    if (dateTimestamp) {
-      const date = dateTimestamp.toDate ? dateTimestamp.toDate() : new Date(dateTimestamp);
-      formattedDate = date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    }
-
-    return {
-      id: data.slug,
-      docId: doc.id,
-      title: data.title,
-      category: data.category,
-      date: formattedDate,
-      readTime: data.read_time,
-      image: data.cover_image,
-      excerpt: data.excerpt,
-      content: data.content,
-      content_type: data.content_type,
-      tags: data.tags || [],
-      authorName: data.authorName || 'Anonymous',
-      authorPhoto: data.authorPhoto || '',
-      published_at: data.published_at ? data.published_at.toDate() : (data.created_at ? data.created_at.toDate() : null)
-    };
-  } catch (err) {
-    console.error(`[Firebase Data Layer] Failed to fetch post "${slug}":`, err);
-    // Scan local failsafe array
-    if (typeof BLOG_POSTS !== 'undefined') {
-      return BLOG_POSTS.find(p => p.id === slug || p.slug === slug);
-    }
-    return null;
+  if (typeof BLOG_POSTS !== 'undefined') {
+    return BLOG_POSTS.find(p => p.id === slug || p.slug === slug);
   }
+  return null;
 }
 
 // Expose functions globally
