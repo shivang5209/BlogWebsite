@@ -39,6 +39,7 @@ const validatorVote = {
     readTime: "5 min read",
     image: "/fedora-server-thumbnail.png",
     excerpt: "We all have an old laptop lying around collecting dust. Instead of letting that hardware go to waste, why not turn it into something incredibly useful? A dedicated home server can host your backend applications, run local automated workflows, or manage a self-hosted database completely for free—saving you from expensive cloud bills.",
+    tags: ["Fedora", "Server", "Self-Hosted"],
     content: `
       <p>We all have an old laptop lying around collecting dust. Instead of letting that hardware go to waste, why not turn it into something incredibly useful? A dedicated home server can host your backend applications, run local automated workflows, or manage a self-hosted database completely for free—saving you from expensive cloud bills.</p>
 
