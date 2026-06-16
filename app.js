@@ -237,10 +237,21 @@ async function getSinglePost(slug) {
       throw new Error("Firebase database SDK is not initialized.");
     }
 
-    const snapshot = await window.db.collection('posts')
+    // Try finding in published posts first
+    let snapshot = await window.db.collection('posts')
       .where('slug', '==', slug)
+      .where('status', '==', 'published')
       .limit(1)
       .get();
+
+    // If not found and user is logged in, try checking current user's drafts
+    if (snapshot.empty && window.auth && window.auth.currentUser) {
+      snapshot = await window.db.collection('posts')
+        .where('slug', '==', slug)
+        .where('authorId', '==', window.auth.currentUser.uid)
+        .limit(1)
+        .get();
+    }
 
     if (snapshot.empty) {
       console.warn(`[Firebase Data Layer] Post "${slug}" not found in Firestore.`);

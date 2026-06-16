@@ -896,9 +896,17 @@
 
         try {
           if (!postId) {
-            // Check slug uniqueness
-            const slugCheck = await window.db.collection('posts').where('slug', '==', slug).get();
-            if (!slugCheck.empty) {
+            // Check slug uniqueness across published posts or current user's posts
+            const publishedCheck = await window.db.collection('posts')
+              .where('slug', '==', slug)
+              .where('status', '==', 'published')
+              .get();
+            const myCheck = await window.db.collection('posts')
+              .where('slug', '==', slug)
+              .where('authorId', '==', currentUser.uid)
+              .get();
+
+            if (!publishedCheck.empty || !myCheck.empty) {
               throw new Error('This URL Slug already exists. Please customize the slug to make it unique.');
             }
 
@@ -910,9 +918,20 @@
             await window.db.collection('posts').add(payload);
           } else {
             // Check slug uniqueness excluding this document
-            const slugCheck = await window.db.collection('posts').where('slug', '==', slug).get();
+            const publishedCheck = await window.db.collection('posts')
+              .where('slug', '==', slug)
+              .where('status', '==', 'published')
+              .get();
+            const myCheck = await window.db.collection('posts')
+              .where('slug', '==', slug)
+              .where('authorId', '==', currentUser.uid)
+              .get();
+
             let isDuplicate = false;
-            slugCheck.forEach(doc => {
+            publishedCheck.forEach(doc => {
+              if (doc.id !== postId) isDuplicate = true;
+            });
+            myCheck.forEach(doc => {
               if (doc.id !== postId) isDuplicate = true;
             });
             
