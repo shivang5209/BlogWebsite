@@ -1,0 +1,16 @@
+[Unit]
+Description=Cloudflare Tunnel Agent for Blog API
+After=network.target
+
+[Service]
+Type=simple
+# cloudflared service usually runs as root or your system user
+User=root
+# Ensure cloudflared is installed at /usr/bin/cloudflared (run 'which cloudflared')
+# Replace with either your tunnel name or use the run command
+ExecStart=/usr/bin/cloudflared tunnel run shivang-blog-api
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

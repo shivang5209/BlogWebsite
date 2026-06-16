@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog Directory — Shivang Codes</title>
+  <meta name="description" content="Explore Shivang's complete catalogue of research papers, dev projects, code optimizations, and full-stack tutorials.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <main class="blog-directory container">
+    <div class="blog-controls">
+      <h1 style="font-size: 2.5rem; font-weight: 800;">Writing &amp; Ideas</h1>
+      
+      <!-- Search Input -->
+      <div class="search-bar">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="search-input" class="search-input" placeholder="Search articles, keywords, technology...">
+      </div>
+
+      <!-- Categories Navigation Pills -->
+      <div class="filter-pills" id="filter-pills-container">
+        <button class="filter-btn active" data-category="all">All posts</button>
+        <button class="filter-btn" data-category="research">Research</button>
+        <button class="filter-btn" data-category="projects">Projects</button>
+        <button class="filter-btn" data-category="tech">Tech</button>
+        <button class="filter-btn" data-category="code">Code</button>
+        <button class="filter-btn" data-category="tutorials">Tutorials</button>
+        <button class="filter-btn" data-category="personal">Personal</button>
+      </div>
+    </div>
+
+    <!-- Articles Output Grid -->
+    <div class="articles-grid" id="blog-articles-grid">
+      <!-- Injected dynamically via JS -->
+    </div>
+  </main>
+
+  <!-- Script setup -->
+  <script src="api-config.js"></script>
+  <script src="posts.js"></script>
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const grid = document.getElementById('blog-articles-grid');
+      const searchInput = document.getElementById('search-input');
+      const filterPills = document.querySelectorAll('.filter-btn');
+      
+      let activeCategory = 'all';
+      let searchQuery = '';
+      let allPosts = [];
+
+      // Fetch posts dynamically with cache/local fallback
+      allPosts = await getBlogPosts();
+
+      // Initialize from URL search parameters if any (e.g. blog.html?category=research)
+      const urlParams = new URLSearchParams(window.location.search);
+      const categoryParam = urlParams.get('category');
+      if (categoryParam) {
+        const matchingBtn = Array.from(filterPills).find(btn => btn.dataset.category.toLowerCase() === categoryParam.toLowerCase());
+        if (matchingBtn) {
+          filterPills.forEach(b => b.classList.remove('active'));
+          matchingBtn.classList.add('active');
+          activeCategory = categoryParam.toLowerCase();
+        }
+      }
+
+      // Filter and Render posts
+      function renderFilteredPosts() {
+        const filtered = allPosts.filter(post => {
+          const matchesCategory = activeCategory === 'all' || post.category.toLowerCase() === activeCategory;
+          const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                post.category.toLowerCase().includes(searchQuery.toLowerCase());
+          return matchesCategory && matchesSearch;
+        });
+
+        if (filtered.length > 0) {
+          grid.innerHTML = filtered.map(post => buildArticleCard(post)).join('');
+        } else {
+          grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 4rem 0; color: var(--text-secondary);">
+              <i class="fa-regular fa-face-frown" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+              <p style="font-size: 1.2rem; font-weight: 500;">No articles match your search criteria.</p>
+              <p style="font-size: 0.95rem; margin-top: 0.5rem;">Try adjusting your keywords or category filters.</p>
+            </div>
+          `;
+        }
+      }
+
+      // Search event handler
+      searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        renderFilteredPosts();
+      });
+
+      // Category filter buttons event handler
+      filterPills.forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterPills.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeCategory = btn.dataset.category;
+          renderFilteredPosts();
+          
+          // Clean/Update URL to prevent inconsistencies
+          const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + (activeCategory !== 'all' ? `?category=${activeCategory}` : '');
+          window.history.pushState({ path: newUrl }, '', newUrl);
+        });
+      });
+
+      // Initial execution
+      renderFilteredPosts();
+    });
+  </script>
+</body>
+</html>

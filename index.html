@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shivang Codes — Blog & Digital Hub</title>
+  <meta name="description" content="Personal blog and research hub of Shivang. Discussing research ideas, software engineering projects, code tutorials, and tech trends.">
+  <link rel="stylesheet" href="style.css">
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Hero Section -->
+  <section class="hero container">
+    <span class="hero-label">Shivang Codes</span>
+    <h1>Engineering ideas, constructing projects, and finding <span>product clarity</span>.</h1>
+    <p class="hero-tagline">Welcome to my personal digital hub. I write about research directions, open-source software, deep architectural concepts, coding syntaxes, and life lessons.</p>
+    <div class="hero-buttons">
+      <a href="blog.html" class="btn-primary">Explore Articles <i class="fa-solid fa-arrow-right"></i></a>
+      <a href="about.html" class="btn-secondary">About Me</a>
+    </div>
+  </section>
+
+  <!-- Categories Showcase -->
+  <section class="categories-showcase container">
+    <h2 class="section-title">Sections</h2>
+    <div class="categories-grid" id="categories-container">
+      <!-- Generated Dynamically via JS or written directly for structural layout styling -->
+      
+      <!-- Card 01 - Research -->
+      <div class="card card-light" onclick="window.location.href='blog.html?category=research'" style="cursor: pointer;">
+        <div class="card-header">
+          <span class="card-number">01</span>
+          <span class="card-icon">🔬</span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Research</h3>
+          <p class="card-desc">Theoretical ideas, consensus protocols, papers, and conceptual frameworks.</p>
+        </div>
+        <div class="card-footer">
+          <span class="card-pill">AI Models</span>
+          <span class="card-pill">Protocols</span>
+        </div>
+      </div>
+
+      <!-- Card 02 - Projects -->
+      <div class="card card-dark" onclick="window.location.href='blog.html?category=projects'" style="cursor: pointer;">
+        <div class="card-header">
+          <span class="card-number">02</span>
+          <span class="card-icon">🚀</span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Projects</h3>
+          <p class="card-desc">Build logs, architecture reviews, repositories, and releases of active projects.</p>
+        </div>
+        <div class="card-footer">
+          <span class="card-pill">Open Source</span>
+          <span class="card-pill">Builds</span>
+        </div>
+      </div>
+
+      <!-- Card 03 - Tech -->
+      <div class="card card-gradient" onclick="window.location.href='blog.html?category=tech'" style="cursor: pointer;">
+        <div class="card-header">
+          <span class="card-number">03</span>
+          <span class="card-icon">🌐</span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Tech</h3>
+          <p class="card-desc">Deep-dives into APIs, WebGPU, distributed hardware systems, and industry changes.</p>
+        </div>
+        <div class="card-footer">
+          <span class="card-pill">GPU compute</span>
+          <span class="card-pill">Cloud</span>
+        </div>
+      </div>
+
+      <!-- Card 04 - Code -->
+      <div class="card card-dark" onclick="window.location.href='blog.html?category=code'" style="cursor: pointer;">
+        <div class="card-header">
+          <span class="card-number">04</span>
+          <span class="card-icon">💻</span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Code</h3>
+          <p class="card-desc">Algorithms, code snippets, configurations, optimizations, and TypeScript patterns.</p>
+        </div>
+        <div class="card-footer">
+          <span class="card-pill">TypeScript</span>
+          <span class="card-pill">Snippets</span>
+        </div>
+      </div>
+
+      <!-- Card 05 - Tutorials -->
+      <div class="card card-light" onclick="window.location.href='blog.html?category=tutorials'" style="cursor: pointer;">
+        <div class="card-header">
+          <span class="card-number">05</span>
+          <span class="card-icon">📖</span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Tutorials</h3>
+          <p class="card-desc">Step-by-step developer guides to implementing designs, components, and libraries.</p>
+        </div>
+        <div class="card-footer">
+          <span class="card-pill">React</span>
+          <span class="card-pill">CSS</span>
+        </div>
+      </div>
+
+      <!-- Card 06 - Personal -->
+      <div class="card card-dark" onclick="window.location.href='blog.html?category=personal'" style="cursor: pointer;">
+        <div class="card-header">
+          <span class="card-number">06</span>
+          <span class="card-icon">☕</span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Personal</h3>
+          <p class="card-desc">Reflections, career updates, dev milestones, and logs on buying my domain name.</p>
+        </div>
+        <div class="card-footer">
+          <span class="card-pill">Updates</span>
+          <span class="card-pill">Journal</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Latest Articles Section -->
+  <section class="articles-section container">
+    <div class="section-header">
+      <h2>Recent Writing</h2>
+      <a href="blog.html" class="view-all">View all writing <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+    <div class="articles-grid" id="latest-articles-grid">
+      <!-- Injected dynamically via JS -->
+    </div>
+  </section>
+
+  <!-- Load files -->
+  <script src="api-config.js"></script>
+  <script src="posts.js"></script>
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const latestGrid = document.getElementById('latest-articles-grid');
+      // Fetch posts dynamically with cache/local fallback
+      const posts = await getBlogPosts();
+      const latestPosts = posts.slice(0, 3);
+      latestGrid.innerHTML = latestPosts.map(post => buildArticleCard(post)).join('');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Article Reader — Shivang Codes</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Prism Tomorrow syntax theme for premium styling -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <!-- Marked.js Markdown parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+  <main class="post-page container">
+    <!-- Back Navigation -->
+    <a href="blog.html" class="post-back"><i class="fa-solid fa-arrow-left"></i> Back to all articles</a>
+
+    <!-- Main article wrapper -->
+    <article id="article-root">
+      <!-- Article Header -->
+      <div class="post-header">
+        <div class="post-meta-container">
+          <span class="post-tag" id="post-category">Category</span>
+          <span class="post-date-time" id="post-meta-details">Date • Time</span>
+        </div>
+        <h1 id="post-title">Article Title</h1>
+      </div>
+
+      <!-- Hero Image -->
+      <div class="post-hero-image" id="post-hero-image"></div>
+
+      <!-- Layout: Body content + Sticky Sidebar -->
+      <div class="post-body-layout">
+        <!-- Content Column -->
+        <div class="post-content" id="post-content">
+          <!-- Injected dynamic content -->
+        </div>
+
+        <!-- Sidebar Column -->
+        <aside class="post-sidebar">
+          <!-- Share -->
+          <div class="sidebar-box">
+            <h4>Share Article</h4>
+            <div class="social-share-buttons">
+              <button class="btn-share" title="Share on Twitter"><i class="fa-brands fa-twitter"></i></button>
+              <button class="btn-share" title="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></button>
+              <button class="btn-share" title="Copy Link"><i class="fa-solid fa-link"></i></button>
+            </div>
+          </div>
+
+          <!-- Static Newsletter -->
+          <div class="sidebar-box">
+            <h4>Subscribe for updates</h4>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Get shivangcodes.in logs straight to your inbox.</p>
+            <form id="newsletter-form" class="newsletter-form">
+              <input type="email" placeholder="name@email.com" class="newsletter-input" required>
+              <button type="submit" class="newsletter-submit">Subscribe</button>
+            </form>
+          </div>
+        </aside>
+      </div>
+    </article>
+  </main>
+
+  <!-- Prism.js Syntax Highlighting dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+  
+  <script src="api-config.js"></script>
+  <script src="posts.js"></script>
+  <script src="app.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Get URL parameter id
+      const urlParams = new URLSearchParams(window.location.search);
+      const postId = urlParams.get('id');
+
+      if (!postId) {
+        window.location.href = 'blog.html';
+        return;
+      }
+
+      // Find the corresponding post using dynamic fallback helper
+      const post = await getSinglePost(postId);
+
+      if (!post) {
+        // Post not found
+        document.getElementById('article-root').innerHTML = `
+          <div style="text-align: center; padding: 6rem 0; color: var(--text-secondary);">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 4rem; margin-bottom: 1.5rem; color: var(--accent-purple);"></i>
+            <h1 style="color: var(--text-primary); margin-bottom: 1rem;">Post Not Found</h1>
+            <p>We couldn't find the article you are looking for.</p>
+            <a href="blog.html" class="btn-primary" style="margin-top: 2rem;">Return to directory</a>
+          </div>
+        `;
+        return;
+      }
+
+      // Update Document Title for SEO
+      document.title = `${post.title} — Shivang Codes`;
+      
+      // Update Meta Tags if header/meta exists or is configurable, else set elements directly
+      document.getElementById('post-title').innerText = post.title;
+      document.getElementById('post-category').innerText = post.category;
+      document.getElementById('post-meta-details').innerText = `${post.date} • ${post.readTime}`;
+      document.getElementById('post-hero-image').style.backgroundImage = `url('${post.image}')`;
+      
+      // Render body text based on whether it is HTML or Markdown
+      let contentHtml = post.content;
+      if (post.content_type === 'markdown' && typeof marked !== 'undefined') {
+        contentHtml = marked.parse(post.content);
+      }
+      document.getElementById('post-content').innerHTML = contentHtml;
+
+      // Initialize scripts
+      setupReadingProgress();
+      setupShareActions();
+      setupNewsletter();
+
+      // Trigger Prism highlight on newly injected code blocks
+      if (typeof Prism !== 'undefined') {
+        Prism.highlightAll();
+      }
+    });
+  </script>
+</body>
+</html>
