@@ -1,5 +1,98 @@
 const BLOG_POSTS = [
   {
+    id: "building-quizforge-mcq-platform",
+    title: "Building QuizForge: A Serverless, Pure Client-Side MCQ Exam Platform",
+    category: "Projects",
+    date: "June 23, 2026",
+    readTime: "6 min read",
+    image: "/quizforge-cover.png",
+    excerpt: "How I built a browser-based, zero-database MCQ quiz engine that parses raw, messy text files, normalizes formatting discrepancies on the fly, and runs customizable exam environments using local browser memory.",
+    tags: ["Projects", "Vanilla JS", "JSON", "Regex"],
+    content: `
+      <p>As developers, we frequently use AI tools to generate quizzes, study guides, and mock exams. However, the raw text output from LLMs is notoriously inconsistent—line endings change, bullet formats vary, correct answers are marked unpredictably, and formatting typos are common. If you try to feed this raw data into a standard database schema, it crashes.</p>
+
+      <p>To solve this, I built <strong>QuizForge</strong>: a browser-based, serverless MCQ exam and quiz engine designed to run entirely in client-side memory. It normalizes messy raw text uploads on the fly, validates formatting discrepancies, and hosts multiple interactive quiz and exam modes using local browser storage.</p>
+
+      <p>Here is an in-depth breakdown of how I designed its architecture, built the intelligent parsing pipeline, and structured the user experience.</p>
+
+      <hr>
+
+      <h2>1. Zero-Database, Serverless Client-Side Architecture</h2>
+      <p>Rather than standing up an Express server and a SQL database cluster, QuizForge runs completely in the reader's browser. It uses a clean file-import design:</p>
+      <ul>
+        <li><strong>Data Portability:</strong> Quizzes are loaded from simple text files (<code>.txt</code> or <code>.md</code>). Anyone can create, edit, and share these files using any basic text editor.</li>
+        <li><strong>State Preservation:</strong> Quiz progress, active questions, selected options, and scores are tracked reactively and saved in the browser's <code>localStorage</code>.</li>
+        <li><strong>Instant Setup:</strong> Because there are no backend servers, database pipelines, or API calls, the app has zero latency and costs absolutely nothing to host.</li>
+      </ul>
+
+      <hr>
+
+      <h2>2. Designing the Smart Parser & Normalizer</h2>
+      <p>The core engine of QuizForge is its parsing pipeline. When a user uploads a text file containing questions, the parser runs a multi-step regex cleaning pipeline to standardize the structure:</p>
+
+      <h3>A. Standardizing the Question Blocks</h3>
+      <p>AI text models structure questions in arbitrary ways. The parser splits the imported text by checking for double newlines, line breaks, or numbered markers (e.g. <code>Q1:</code>, <code>1)</code>, <code>1.</code>). It extracts the clean question stem and removes any preceding indices.</p>
+
+      <h3>B. Parsing Options & Answers</h3>
+      <p>The parser dynamically checks each line inside a question block for choice indicators (like <code>A.</code>, <code>b)</code>, <code>- [ ]</code>, or <code>*</code>). It extracts these choices, maps them to an options array, and searches for correct answer flags (such as <code>Correct: A</code>, <code>Answer: B</code>, or an asterisk next to the correct choice).</p>
+
+      <h3>C. The Code Implementation</h3>
+      <p>Here is the core regex mapping method used to clean the raw input blocks:</p>
+      <pre><code class="language-javascript">
+function parseRawQuizText(rawText) {
+  // Normalize Windows line-endings and strip trailing whitespaces
+  const cleanText = rawText.replace(/\\r\\n/g, '\\n').trim();
+  const blocks = cleanText.split(/\\n\\s*\\n+/);
+  
+  return blocks.map(block => {
+    const lines = block.split('\\n').map(l => l.trim()).filter(l => l.length > 0);
+    const questionText = lines[0].replace(/^Q?\\d+[:.)]\\s*/i, '');
+    const options = [];
+    let correctAnswer = null;
+    
+    // Scan lines for options and answer keys
+    for (let i = 1; i &lt; lines.length; i++) {
+      const line = lines[i];
+      if (/^[A-D][:.)]/i.test(line)) {
+        options.push(line.replace(/^[A-D][:.)]\\s*/i, ''));
+      } else if (/^Answer\\s*:\\s*([A-D])/i.test(line)) {
+        correctAnswer = line.match(/^Answer\\s*:\\s*([A-D])/i)[1].toUpperCase();
+      }
+    }
+    
+    return { question: questionText, options, correctAnswer };
+  });
+}
+      </code></pre>
+
+      <hr>
+
+      <h2>3. User Experience: Dual Testing Modes</h2>
+      <p>To support different learning styles, QuizForge implements two distinct testing environments:</p>
+
+      <ol>
+        <li><strong>Quiz Mode (Flashcard Style):</strong> Built for active recall. When a user clicks an option, the system locks in the answer immediately, colors it (green for correct, red for incorrect), and renders the detailed explanation block. This provides instant feedback for rapid learning.</li>
+        <li><strong>Exam Mode (Simulated Test):</strong> Built for formal assessment. Users can change their answers, skip questions, and review their progress on a grid-navigation panel. The score, correct options, and detailed breakdowns are only revealed after the user confirms their final exam submission.</li>
+      </ol>
+
+      <hr>
+
+      <h2>4. Visual Design & Premium Aesthetics</h2>
+      <p>To match modern web standards, QuizForge uses a premium dark-theme interface utilizing <strong>glassmorphism</strong>:</p>
+      <ul>
+        <li><strong>Glow Effects:</strong> Subtle neon violet borders and shadows that react dynamically to button states and option selections.</li>
+        <li><strong>Smooth Micro-Animations:</strong> Hover transitions, scale shifts, and CSS slide-down animations that keep the interface responsive and engaging.</li>
+        <li><strong>Responsive Grid Layouts:</strong> An interface that renders beautifully across laptops, tablets, and phones alike.</li>
+      </ul>
+
+      <hr>
+
+      <h2>Takeaway</h2>
+      <p>QuizForge proves that you don't always need a heavy database backend to create a powerful, interactive application. By writing an intelligent text normalizer and utilizing local browser memory, you can build a highly transportable, fast, and free platform for students and developers to study their custom AI-generated exams.</p>
+      <p>You can check out the live app at <strong><a href="https://quizforge.shivangcodes.in" target="_blank">quizforge.shivangcodes.in</a></strong> or view the source repository at <strong><a href="https://github.com/shivang5209/exam-mcq" target="_blank">github.com/shivang5209/exam-mcq</a></strong>!</p>
+    `
+  },
+  {
     id: "decentralized-ai-agents",
     title: "The Future of Decentralized AI Agents: Consensus Protocols for LLMs",
     category: "Research",
